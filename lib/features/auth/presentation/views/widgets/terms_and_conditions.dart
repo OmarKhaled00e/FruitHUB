@@ -6,8 +6,8 @@ import 'package:fruit_hub/features/auth/presentation/views/widgets/custom_check_
 import 'package:gap/gap.dart';
 
 class TermsAndConditionsWidget extends StatefulWidget {
-  const TermsAndConditionsWidget({super.key});
-
+  const TermsAndConditionsWidget({super.key, required this.onChanged});
+  final ValueChanged<bool> onChanged;
   @override
   State<TermsAndConditionsWidget> createState() =>
       _TermsAndConditionsWidgetState();
@@ -23,6 +23,7 @@ class _TermsAndConditionsWidgetState extends State<TermsAndConditionsWidget> {
           isChecked: isTearmSAccepted,
           onChecked: (bool value) {
             isTearmSAccepted = value;
+            widget.onChanged(value);
             setState(() {});
           },
         ),
