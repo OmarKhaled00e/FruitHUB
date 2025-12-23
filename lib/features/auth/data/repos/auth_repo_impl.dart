@@ -12,6 +12,8 @@ class AuthRepoImpl extends AuthRepo {
   final FirebaseAuthService firebaseAuthService;
 
   AuthRepoImpl({required this.firebaseAuthService});
+
+  // create = Signup = rigister
   @override
   Future<Either<Failure, UserEntity>> createUserWithEmailAndPassword(
     String email,
@@ -27,9 +29,35 @@ class AuthRepoImpl extends AuthRepo {
     } on CustomExceptions catch (e) {
       return left(ServerFailure(message: e.message));
     } catch (e) {
-      log('Exception in AuthRepoImpl.createUserWithEmailAndPassword : ${e.toString()}');
+      log(
+        'Exception in AuthRepoImpl.createUserWithEmailAndPassword : ${e.toString()}',
+      );
       return left(
         ServerFailure(message: 'An error occurred. Please try again later.'),
+      );
+    }
+  }
+
+  // login = signinUser
+  @override
+  Future<Either<Failure, UserEntity>> signinUserWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
+    try {
+      var user = await firebaseAuthService.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      return right(UserModel.fromFirebaseUser(user));
+    } on CustomExceptions catch (e) {
+      return left(ServerFailure(message: e.message));
+    } catch (e) {
+      log(
+        'Exception in AuthRepoImpl.signUserWithEmailAndPassword: ${e.toString()}',
+      );
+      return left(
+        ServerFailure(message: 'لقد حدت خطأ ما الرجاء المحاوله مره اخري'),
       );
     }
   }
