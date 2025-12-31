@@ -37,20 +37,22 @@ class AuthRepoImpl extends AuthRepo {
       await addUserData(user: userEntity);
       return right(userEntity);
     } on CustomExceptions catch (e) {
-      if (user != null) {
-        await firebaseAuthService.deleteUser();
-      }
+      await deleteUesr(user);
       return left(ServerFailure(message: e.message));
     } catch (e) {
-      if (user != null) {
-        await firebaseAuthService.deleteUser();
-      }
+      await deleteUesr(user);
       log(
         'Exception in AuthRepoImpl.createUserWithEmailAndPassword : ${e.toString()}',
       );
       return left(
         ServerFailure(message: 'An error occurred. Please try again later.'),
       );
+    }
+  }
+
+  Future<void> deleteUesr(User? user) async {
+    if (user != null) {
+      await firebaseAuthService.deleteUser();
     }
   }
 
@@ -65,7 +67,8 @@ class AuthRepoImpl extends AuthRepo {
         email: email,
         password: password,
       );
-      return right(UserModel.fromFirebaseUser(user));
+      var userEntity = await getUserData(uid: user.uid);
+      return right(userEntity);
     } on CustomExceptions catch (e) {
       return left(ServerFailure(message: e.message));
     } catch (e) {
@@ -80,12 +83,24 @@ class AuthRepoImpl extends AuthRepo {
 
   @override
   Future<Either<Failure, UserEntity>> signinWithGoogle() async {
+    User? user;
     try {
-      var user = await firebaseAuthService.signInWithGoogle();
-      return right(UserModel.fromFirebaseUser(user));
+      user = await firebaseAuthService.signInWithGoogle();
+      var userEntity = UserModel.fromFirebaseUser(user);
+      var isUserExisting = await databaseService.checkIfDataExists(
+        path: BackendEndpoint.isUserExists,
+        documentId: user.uid,
+      );
+      if (isUserExisting) {
+        await getUserData(uid: user.uid);
+      } else {
+        await addUserData(user: userEntity);
+      }
+      return right(userEntity);
     } on CustomExceptions catch (e) {
       return left(ServerFailure(message: e.message));
     } catch (e) {
+      await deleteUesr(user);
       log(
         'Exception in AuthRepoImpl.createUserWithEmailAndPassword: ${e.toString()}',
       );
@@ -97,12 +112,25 @@ class AuthRepoImpl extends AuthRepo {
 
   @override
   Future<Either<Failure, UserEntity>> signinWithFacebook() async {
+    User? user;
     try {
-      var user = await firebaseAuthService.signInWithFacebook();
-      return right(UserModel.fromFirebaseUser(user));
+      user = await firebaseAuthService.signInWithFacebook();
+      var userEntity = UserModel.fromFirebaseUser(user);
+      var isUserExisting = await databaseService.checkIfDataExists(
+        path: BackendEndpoint.isUserExists,
+        documentId: user.uid,
+      );
+      if (isUserExisting) {
+        await getUserData(uid: user.uid);
+      } else {
+        await addUserData(user: userEntity);
+      }
+
+      return right(userEntity);
     } on CustomExceptions catch (e) {
       return left(ServerFailure(message: e.message));
     } catch (e) {
+      await deleteUesr(user);
       log('Exception in AuthRepoImpl.signinWithFacebook: ${e.toString()}');
       return left(
         ServerFailure(message: 'حدث خطأ ما الرجاء المحاوله مره اخري'),
@@ -115,6 +143,16 @@ class AuthRepoImpl extends AuthRepo {
     await databaseService.addData(
       path: BackendEndpoint.addUserData,
       data: user.toMap(),
+      documentId: user.uId,
     );
+  }
+
+  @override
+  Future<UserEntity> getUserData({required String uid}) async {
+    var userData = await databaseService.getData(
+      path: BackendEndpoint.getUsersData,
+      documentId: uid,
+    );
+    return UserModel.fromJson(userData);
   }
 }
