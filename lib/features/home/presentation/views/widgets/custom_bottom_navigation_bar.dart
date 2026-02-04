@@ -15,6 +15,7 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 80,
       decoration: ShapeDecoration(
         color: Colors.white,
         shape: RoundedRectangleBorder(
